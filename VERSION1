@@ -1,0 +1,507 @@
+      ***********************************************************       00000124
+      *TRANSFILE - TRANSACTION FILE                  (PS FILE). *       00001024
+      *ERRORFILE - FILE CONTAINS UNPROCESSED RECORDS (PS FILE). *       00007024
+      ***********************************************************       00008024
+      *           DB2 CASE STUDY-BANKING SYSTEM                 *       00012037
+      * *********************************************************       00015024
+       ID              DIVISION.                                        00020037
+       PROGRAM-ID.     VERSION1.                                        00030037
+       ENVIRONMENT     DIVISION.                                        00040037
+       INPUT-OUTPUT    SECTION.                                         00050037
+       FILE-CONTROL.                                                    00060000
+      *********TRANSACTION*FILE***********                              00061032
+           SELECT TRANSFILE ASSIGN TO DD1                               00070028
+           FILE STATUS  IS FS-1.                                        00080000
+      ************ERROR*FILE**************                              00171032
+           SELECT ERRORFILE ASSIGN TO DD2                               00172032
+           FILE STATUS  IS FS-2.                                        00173032
+      ************************************                              00174037
+           SELECT OUTFILE ASSIGN TO DD3
+           FILE STATUS IS FS-3.
+      ************************************                              00174037
+       DATA            DIVISION.                                        00180037
+       FILE            SECTION.                                         00190037
+       FD TRANSFILE.                                                    00270028
+       COPY TRANS.                                                      00310129
+       FD ERRORFILE.                                                    00431028
+       COPY ERRFILE.                                                    00432031
+       FD OUTFILE.
+       01 OUTREC       PIC X(80).
+       WORKING-STORAGE SECTION.                                         00440000
+           EXEC SQL                                                     00450033
+             INCLUDE CUSTTB                                             00460030
+           END-EXEC.                                                    00470033
+           EXEC SQL                                                     00471033
+             INCLUDE LOANTB                                             00472030
+           END-EXEC.                                                    00473033
+           EXEC SQL                                                     00474033
+             INCLUDE SQLCA                                              00475030
+           END-EXEC.                                                    00476033
+           EXEC SQL                                                     00477033
+             INCLUDE LOANTSTB                                           00478030
+           END-EXEC.                                                    00479033
+           EXEC SQL
+              DECLARE TCURSOR CURSOR FOR
+              SELECT LNO,CID,TYPE,ODATE,OUTAMT
+              FROM LOAN_TRANS
+              ORDER BY TYPE,CID
+           END-EXEC.
+       77 GRAND-TOT    PIC 9(9)V99.
+       77 FS-3         PIC 99.
+       77 ADDRI      PIC S9(4) COMP.                                    00479133
+       77 CDATEI     PIC S9(4) COMP.                                    00479133
+       77 FS-1       PIC 99.                                            00479233
+       77 FS-2       PIC 99.                                            00479333
+       77 AMOUNT     PIC 9(8)V99.
+       COPY HEADER.
+       PROCEDURE DIVISION.                                              00480000
+       MAIN-PARA.                                                       00510030
+           OPEN INPUT  TRANSFILE                                        00520037
+           OPEN OUTPUT ERRORFILE                                        00521033
+           IF FS-1 = 00 AND FS-2 = 00                                   00530033
+              DISPLAY "FILE OPEN SUCESS"                                00540029
+              PERFORM READ-TRANSFILE UNTIL FS-1 NOT = 00                00541030
+           ELSE                                                         00550000
+              DISPLAY "OPEN ERROR" FS-1                                 00560029
+           END-IF                                                       00570004
+           CLOSE TRANSFILE                                              00580033
+           CLOSE ERRORFILE                                              00590033
+           PERFORM OPEN-PARA
+           EXEC SQL
+              CLOSE TCURSOR
+           END-EXEC
+           WRITE OUTREC FROM WS-LINE
+           WRITE OUTREC FROM WS-HEAD5
+           CLOSE OUTFILE
+           STOP RUN.
+       READ-TRANSFILE.                                                  00630030
+           READ TRANSFILE                                               00640030
+           AT END DISPLAY "ALL RECORDS PROCESSED"                       00650030
+           NOT AT END                                                   00660030
+               PERFORM EVALUATE-PARA                                    00670030
+           END-READ.                                                    00680030
+       EVALUATE-PARA.                                                   00690030
+           EVALUATE OPTION                                              00700033
+               WHEN 01 PERFORM ADD-VALIDATION                           00710032
+               WHEN 02 PERFORM UPD-VALIDATION                           00720032
+               WHEN 03 PERFORM DEL-VALIDATION                           00721032
+               WHEN 04 PERFORM AD-LN-VALIDATION                         00730033
+               WHEN 05 PERFORM UP-LN-VALIDATION                         00740033
+               WHEN OTHER PERFORM WRITE-ERROR-FILE                      00750030
+           END-EVALUATE.                                                00760030
+       ADD-VALIDATION.                                                  00770032
+           IF CID NOT = SPACES                                          00771030
+              MOVE CID TO HV-CID OF HV-CUST                             00780033
+              IF CNAME NOT = SPACES                                     00781030
+                 MOVE CNAME TO HV-NAME                                  00790033
+                 IF CADDR NOT = SPACES                                  00800030
+                    MOVE LENGTH OF CADDR TO HV-ADDR-LEN                 00801030
+                    MOVE CADDR TO HV-ADDR-TEXT                          00810030
+                 ELSE                                                   00820030
+                    MOVE -1 TO ADDRI                                    00830030
+                 END-IF                                                 00840030
+                 PERFORM ADD-CUSTOMER                                   00850032
+              ELSE                                                      00890030
+                 PERFORM ERR-CUSTNAME-EMPTY
+              END-IF                                                    00910031
+           ELSE                                                         00920031
+              MOVE ADDCUST TO ERRFILE-REC                               00930031
+              PERFORM ERR-CUSTID-EMPTY                                  00931033
+           END-IF.                                                      00950031
+       UPD-VALIDATION.                                                  00960033
+           IF CID NOT = SPACES                                          00970031
+              MOVE CID TO HV-CID OF HV-CUST                             01011033
+              MOVE LENGTH OF UADDR TO HV-ADDR-LEN                       01020032
+              MOVE UADDR TO HV-ADDR-TEXT                                01030032
+              PERFORM UPD-CUSTOMER                                      01040033
+           ELSE                                                         01150031
+              MOVE UPDCUST TO ERRFILE-REC                               01160031
+              PERFORM ERR-CUSTID-EMPTY                                  01161033
+           END-IF.                                                      01180031
+       DEL-VALIDATION.                                                  01190032
+           IF CID NOT = SPACES                                          01200031
+              MOVE CID TO HV-CID OF HV-LOAN_TS, HV-CUST                 01220036
+              MOVE 'O' TO HV-STATUS                                     01230033
+              EXEC SQL                                                  01250032
+                SELECT CID INTO :HV-LOAN_TS.HV-CID                      01260033
+                FROM LOAN_TRANS                                         01270032
+                WHERE CID = :HV-LOAN_TS.HV-CID                          01280033
+                AND STATUS = :HV-STATUS                                 01281033
+              END-EXEC                                                  01290032
+              IF SQLCODE = 100                                          01300032
+                 PERFORM DEL-CUSTOMER                                   01310033
+              ELSE                                                      01320032
+                 MOVE ADDCUST TO ERRFILE-REC                            01330032
+                 PERFORM ERR-CUST-HAVE-LOAN
+              END-IF                                                    01340032
+           ELSE                                                         01380031
+              MOVE ADDCUST TO ERRFILE-REC                               01390032
+              PERFORM ERR-CUSTID-EMPTY                                  01391033
+           END-IF.                                                      01410031
+       ADD-CUSTOMER.                                                    01411032
+           EXEC SQL                                                     01420032
+              INSERT INTO CUSTOMER VALUES(:HV-CUST.HV-CID,:HV-NAME,     01430033
+                                          :HV-ADDR:ADDRI)               01440032
+           END-EXEC                                                     01450032
+           IF SQLCODE = 0                                               01460032
+              DISPLAY "RECORD INSERTED SUCESSFULLY"                     01470032
+           ELSE                                                         01480032
+              IF SQLCODE = -803                                         01490034
+                 PERFORM ERR-CUSTID-DUPLICATE
+              ELSE                                                      01530032
+                 DISPLAY "RECORD INSERTED FAILED" SQLCODE               01540032
+              END-IF                                                    01550032
+           END-IF.                                                      01560032
+       UPD-CUSTOMER.                                                    01570033
+           EXEC SQL                                                     01580033
+              UPDATE CUSTOMER                                           01590033
+              SET ADDR =  :HV-ADDR                                      01600037
+              WHERE CID = :HV-CUST.HV-CID                               01610033
+           END-EXEC                                                     01620033
+           IF SQLCODE = 0                                               01630033
+              DISPLAY "UPDATE SUCESS"                                   01640033
+           ELSE                                                         01650033
+              IF SQLCODE = 100                                          01660033
+                 MOVE UPDCUST TO ERRFILE-REC                            01670033
+                 PERFORM ERR-CUSTID-NOTPRESENT
+              ELSE                                                      01701033
+                 DISPLAY "UPDATE FAILED" SQLCODE                        01702033
+              END-IF                                                    01703033
+           END-IF.                                                      01710033
+       DEL-CUSTOMER.                                                    01720033
+           EXEC SQL                                                     01730033
+               DELETE FROM CUSTOMER                                     01740033
+               WHERE CID = :HV-CUST.HV-CID                              01750033
+           END-EXEC                                                     01760033
+           IF SQLCODE = 0                                               01770033
+              DISPLAY "DELETE SUCESS"                                   01780033
+           ELSE                                                         01790033
+              IF SQLCODE = 100                                          01800033
+                 MOVE ADDCUST TO ERRFILE-REC                            01810033
+                 PERFORM ERR-CUSTID-NOTPRESENT
+              ELSE                                                      01850033
+                 DISPLAY "DELETE FAILED"                                01860033
+              END-IF                                                    01870033
+           END-IF.                                                      01880033
+       AD-LN-VALIDATION.                                                01881036
+           IF CID NOT = SPACES                                          01882036
+              MOVE CID TO HV-CID OF HV-CUST                             01883037
+              MOVE CID TO HV-CID OF HV-LOAN_TS
+              IF LTYPE NOT = SPACES                                     01884037
+                 MOVE LTYPE TO HV-TYPE OF HV-LOAN                       01885037
+                 MOVE LTYPE TO HV-TYPE OF HV-LOAN_TS                    01885037
+                 IF LAMT NOT = SPACES                                   01886037
+                    PERFORM CID-CHECK                                   01888037
+                 ELSE                                                   01889036
+                    MOVE ADDLOAN TO ERRFILE-REC                         01889137
+                    PERFORM ERR-LNAMT-EMPTY
+                 END-IF                                                 01889436
+              ELSE                                                      01889536
+                 MOVE ADDLOAN TO ERRFILE-REC                            01889637
+                 PERFORM ERR-LNTYPE-EMPTY
+              END-IF                                                    01890036
+           ELSE                                                         01890136
+              MOVE ADDLOAN TO ERRFILE-REC                               01890237
+              PERFORM ERR-CUSTID-EMPTY                                  01890336
+           END-IF.                                                      01890436
+       CID-CHECK.
+           EXEC SQL
+              SELECT CID INTO :HV-CUST.HV-CID
+              FROM CUSTOMER
+              WHERE CID = :HV-CUST.HV-CID
+           END-EXEC
+           IF SQLCODE = 0
+              PERFORM TYPE-CHECK
+           ELSE
+              IF SQLCODE = 100
+                 EVALUATE OPTION
+                    WHEN 04 MOVE ADDLOAN TO ERRFILE-REC
+                    WHEN 05 MOVE UPDLOAN TO ERRFILE-REC
+                 END-EVALUATE
+                 PERFORM ERR-CUSTID-NOTPRESENT
+              ELSE
+                 DISPLAY "CID CHECK FAILED" SQLCODE
+              END-IF
+           END-IF.
+       TYPE-CHECK.                                                      01890537
+           EXEC SQL
+              SELECT LID,ROI,TERM
+              INTO :HV-LOAN.HV-LID,:HV-ROI,:HV-TERM
+              FROM LOAN
+              WHERE TYPE = :HV-LOAN.HV-TYPE
+           END-EXEC
+           IF SQLCODE = 0
+              EVALUATE OPTION
+                 WHEN 04 PERFORM TYPE-DUPLICATE-CHECK
+                 WHEN 05 PERFORM LID-CHECK
+              END-EVALUATE
+           ELSE
+              IF SQLCODE = 100
+                 EVALUATE OPTION
+                    WHEN 04 MOVE ADDLOAN TO ERRFILE-REC
+                    WHEN 05 MOVE UPDLOAN TO ERRFILE-REC
+                 END-EVALUATE
+                 PERFORM ERR-LNTYPE-NOTPRESENT
+              ELSE
+                 DISPLAY "LOAN TYPE CHECK FAILED" SQLCODE
+              END-IF
+           END-IF.
+       TYPE-DUPLICATE-CHECK.
+           EXEC SQL
+              SELECT CID,TYPE INTO :HV-LOAN_TS.HV-CID,
+                                   :HV-LOAN_TS.HV-TYPE
+               FROM LOAN_TRANS
+               WHERE CID =:HV-LOAN_TS.HV-CID
+               AND   TYPE=:HV-LOAN_TS.HV-TYPE
+           END-EXEC
+           IF SQLCODE = 0
+              PERFORM ERR-DUPLICATE-TYPE
+           ELSE
+              IF SQLCODE = 100
+                 PERFORM TYPE-AMOUNT-CHECK
+              ELSE
+                 DISPLAY "TYPE-DUPLICATE ERROR" SQLCODE
+              END-IF
+           END-IF.
+       TYPE-AMOUNT-CHECK.
+           EXEC SQL
+              SELECT MAXLOANAMT INTO :HV-MAXLOANAMT
+              FROM LOAN
+              WHERE TYPE =:HV-LOAN.HV-TYPE
+           END-EXEC
+           IF LAMT > HV-MAXLOANAMT
+              PERFORM ERR-SURPLUS-AMT
+           ELSE
+              PERFORM ADD-LOAN
+           END-IF.
+       ADD-LOAN.                                                        01890537
+           MOVE 'O'                TO HV-STATUS                         01890637
+           COMPUTE AMOUNT = LAMT + (HV-ROI * LAMT * HV-TERM)
+           MOVE AMOUNT             TO HV-OUTAMT
+           MOVE -1                 TO CDATEI
+           MOVE HV-CID  OF HV-CUST TO HV-CID  OF HV-LOAN_TS
+           MOVE HV-LID  OF HV-LOAN TO HV-LID  OF HV-LOAN_TS
+           MOVE HV-TYPE OF HV-LOAN TO HV-TYPE OF HV-LOAN_TS
+           EXEC SQL
+              INSERT INTO LOAN_TRANS(CID,LID,
+              TYPE,STATUS,CDATE,OUTAMT)
+              VALUES(:HV-LOAN_TS.HV-CID,
+                                  :HV-LOAN_TS.HV-LID,
+                                  :HV-LOAN_TS.HV-TYPE,
+                                  :HV-STATUS,:HV-CDATE:CDATEI,
+                                  :HV-OUTAMT)
+           END-EXEC
+           IF SQLCODE = 0
+              DISPLAY "LOAN_TS RECORD INSERTED"
+           ELSE
+              DISPLAY "LOAN_TS INSERTION FAILED" SQLCODE
+           END-IF.
+       UP-LN-VALIDATION.                                                01881036
+           IF UCID NOT = SPACES                                         01882036
+              MOVE UCID TO HV-CID OF HV-CUST                            01883037
+              IF ULTYPE NOT = SPACES                                    01884037
+                 MOVE ULTYPE TO HV-TYPE OF HV-LOAN                      01885037
+                 IF ULID NOT = SPACES                                   01886037
+                    IF LNAMT NOT = SPACES
+                       PERFORM CID-CHECK                                01888037
+                    ELSE                                                01889036
+                       MOVE UPDLOAN TO ERRFILE-REC                      01889137
+                       PERFORM ERR-LNAMT-EMPTY
+                    END-IF                                              01889436
+                 ELSE
+                    PERFORM ERR-LNID-EMPTY
+                 END-IF
+              ELSE                                                      01889536
+                 MOVE UPDLOAN TO ERRFILE-REC                            01889637
+                 PERFORM ERR-LNTYPE-EMPTY
+              END-IF                                                    01890036
+           ELSE                                                         01890136
+              MOVE UPDLOAN TO ERRFILE-REC                               01890237
+              PERFORM ERR-CUSTID-EMPTY                                  01890336
+           END-IF.                                                      01890436
+       LID-CHECK.
+           EXEC SQL
+              SELECT LID INTO :HV-LOAN.HV-LID
+              FROM LOAN
+              WHERE LID = :HV-LOAN.HV-LID
+           END-EXEC
+           IF SQLCODE = 0
+              PERFORM FETCH-AMOUNT
+           ELSE
+              IF SQLCODE = 100
+                 PERFORM ERR-LNID-NOTPRESENT
+              ELSE
+                 DISPLAY "LID-CHECK FAILED" SQLCODE
+              END-IF
+           END-IF.
+       FETCH-AMOUNT.
+           EXEC SQL
+              SELECT STATUS,OUTAMT INTO :HV-STATUS,:HV-OUTAMT
+              FROM LOAN_TRANS
+              WHERE CID=:HV-CUST.HV-CID
+              AND   LID=:HV-LOAN.HV-LID
+              AND  TYPE=:HV-LOAN.HV-TYPE
+           END-EXEC
+           IF LNAMT = HV-OUTAMT
+              MOVE 'C'       TO HV-STATUS
+              MOVE  0        TO HV-OUTAMT
+              PERFORM DATE-PARA
+              PERFORM UPD-LOAN
+           ELSE
+              IF LNAMT > HV-OUTAMT
+                 MOVE UPDLOAN TO ERRFILE-REC
+                 PERFORM ERR-REPAYAMOUNT-MORE
+              ELSE
+                 COMPUTE HV-OUTAMT = HV-OUTAMT - LNAMT
+                 MOVE -1      TO CDATEI
+                 PERFORM UPD-LOAN
+              END-IF
+           END-IF.
+       UPD-LOAN.
+           EXEC SQL
+              UPDATE LOAN_TRANS
+              SET STATUS =:HV-STATUS,OUTAMT =:HV-OUTAMT,
+                          CDATE =:HV-CDATE:CDATEI
+              WHERE CID=:HV-CUST.HV-CID
+              AND   LID=:HV-LOAN.HV-LID
+              AND  TYPE=:HV-LOAN.HV-TYPE
+           END-EXEC.
+           IF SQLCODE = 0
+              DISPLAY "LOAN UPDATE SUCESS"
+           ELSE
+              IF SQLCODE = 100
+                 PERFORM ERR-LNTYPE-MISMATCH
+              ELSE
+                 DISPLAY "LOAN UPDATE FAILED" SQLCODE
+              END-IF
+           END-IF.
+       DATE-PARA.
+           EXEC SQL
+              SELECT CURRENT DATE INTO :HV-CDATE
+              FROM SYSIBM.SYSDUMMY1
+           END-EXEC.
+       ERR-CUSTID-EMPTY.                                                01891033
+           MOVE "CUSTOMER ID IN EMPTY"                 TO REASON        01900033
+           WRITE ERRFILE-REC                                            01910033
+           PERFORM ERRFILEST.                                           01920033
+       ERR-CUSTID-DUPLICATE.
+           MOVE ADDCUST                                TO ERRFILE-REC   01500033
+           MOVE "CUSTOMER ID ALREADY EXIST"            TO REASON        01510032
+           WRITE ERRFILE-REC                                            01520032
+           PERFORM ERRFILEST.                                           01521033
+       ERR-CUSTID-NOTPRESENT.                                           01891033
+           MOVE "CUSTOMER ID IS NOT PRESENT"           TO REASON        01820033
+           WRITE ERRFILE-REC                                            01830033
+           PERFORM ERRFILEST.                                           01840033
+       ERR-CUSTNAME-EMPTY.
+           MOVE ADDCUST                                TO ERRFILE-REC   00900031
+           MOVE "CUSTOMER NAME IS EMPTY"               TO REASON        00901031
+           WRITE ERRFILE-REC                                            00902032
+           PERFORM ERRFILEST.                                           00903032
+       ERR-DUPLICATE-TYPE.
+           MOVE ADDLOAN                                TO ERRFILE-REC
+           MOVE "LOAN TYPE DUPLICATE"                  TO REASON
+           WRITE ERRFILE-REC
+           PERFORM ERRFILEST.
+       ERR-SURPLUS-AMT.
+           MOVE ADDLOAN                                TO ERRFILE-REC
+           MOVE "SURPLOUS AMOUNT"                      TO REASON
+           WRITE ERRFILE-REC
+           PERFORM ERRFILEST.
+       ERR-LNID-NOTPRESENT.
+           MOVE UPDLOAN                                TO ERRFILE-REC
+           MOVE "LOAN-ID IS NOT PRESENT"               TO REASON
+           WRITE ERRFILE-REC
+           PERFORM ERRFILEST.
+       ERR-LNTYPE-NOTPRESENT.
+           MOVE "LOAN TYPE IS NOT PRESENT"             TO REASON
+           WRITE ERRFILE-REC
+           PERFORM ERRFILEST.
+       ERR-LNTYPE-EMPTY.
+           MOVE "LOANTYPE IS EMPTY"                    TO REASON        01889737
+           WRITE ERRFILE-REC                                            01889836
+           PERFORM ERRFILEST.                                           01889936
+       ERR-LNAMT-EMPTY.
+           MOVE "LOAN AMOUNT IS EMPTY"                 TO REASON        01889237
+           WRITE ERRFILE-REC                                            01889337
+           PERFORM ERRFILEST.
+       ERRFILEST.                                                       01930033
+           IF FS-2 = 0                                                  01940033
+              DISPLAY "WRITE SUCESS"                                    01950033
+           ELSE                                                         01960033
+              DISPLAY "WRITE FAILED" FS-2                               01970033
+           END-IF.                                                      01980033
+       ERR-LNID-EMPTY.
+           MOVE UPDLOAN                                TO ERRFILE-REC
+           MOVE "LOANID IS EMPTY"                      TO REASON
+           WRITE ERRFILE-REC
+           PERFORM ERRFILEST.
+       ERR-LNTYPE-MISMATCH.
+           MOVE UPDLOAN                                TO ERRFILE-REC
+           MOVE "CUSTOMER DONT HAVE LN WITH THIS TYPE" TO REASON
+           WRITE ERRFILE-REC
+           PERFORM ERRFILEST.
+       ERR-REPAYAMOUNT-MORE.                                            01891033
+           MOVE "REPAYING AMOUNT IS MORE "             TO REASON
+           WRITE ERRFILE-REC
+           PERFORM ERRFILEST.
+       ERR-CUST-HAVE-LOAN.
+           MOVE "CUSTOMER HAVING OUSTANDING AMOUNT"    TO REASON        01331032
+           WRITE ERRFILE-REC                                            01332032
+           PERFORM ERRFILEST.                                           01333033
+       WRITE-ERROR-FILE.                                                01990033
+           MOVE ADDCUST                                TO ERRFILE-REC   02000033
+           MOVE "GIVEN TYPE OPTION IN INVALID"         TO REASON        02010033
+           WRITE ERRFILE-REC                                            02020033
+           PERFORM ERRFILEST.                                           02030033
+       OPEN-PARA.
+           OPEN OUTPUT OUTFILE
+           IF FS-3 = 0
+              DISPLAY "FILE OPENED SUCCESSFULLY"
+              PERFORM HEADER-PARA
+              PERFORM READ-PARA UNTIL SQLCODE NOT = 0
+           ELSE
+              DISPLAY "OPEN ERROR"
+           END-IF.
+       READ-PARA.
+           EXEC SQL
+              OPEN TCURSOR
+           END-EXEC
+           EXEC SQL
+           FETCH TCURSOR INTO :HV-LNO,:HV-LOAN_TS.HV-CID,
+           :HV-LOAN_TS.HV-TYPE,:HV-ODATE,:HV-OUTAMT
+           END-EXEC
+           IF SQLCODE = 0
+              PERFORM DETAIL-PARA
+           ELSE
+              IF SQLCODE = 100
+                 DISPLAY "REACHED END OF THE TABLE"
+              ELSE
+                 DISPLAY 'SQLCODE' SQLCODE
+              END-IF
+           END-IF.
+       HEADER-PARA.
+           MOVE FUNCTION CURRENT-DATE(7:2) TO WS-DAY
+           MOVE FUNCTION CURRENT-DATE(5:2) TO WS-MONTH
+           MOVE FUNCTION CURRENT-DATE(1:4) TO WS-YEAR
+           WRITE OUTREC FROM WS-HEAD1
+           WRITE OUTREC FROM WS-HEAD2
+           WRITE OUTREC FROM WS-HEAD3
+           WRITE OUTREC FROM WS-LINE
+           WRITE OUTREC FROM WS-HEAD4.
+       DETAIL-PARA.
+           MOVE HV-TYPE       TO LN-CATEGORY
+           MOVE HV-CID        TO CUST-ID
+           MOVE HV-LNO        TO LN-NO
+           MOVE HV-ODATE(9:2) TO O-DAY
+           MOVE HV-ODATE(6:2) TO O-MONTH
+           MOVE HV-ODATE(1:4) TO O-YEAR
+           MOVE HV-OUTAMT     TO AMOUNT
+           WRITE OUTREC FROM WS-DETAIL
+           ADD AMOUNT         TO GRAND-TOT
+           MOVE GRAND-TOT     TO TOTAL
+           IF FS-3 = 0
+              DISPLAY 'WRITE SUCESS'
+           ELSE
+              DISPLAY 'WRITE FAILED'
+           END-IF.
