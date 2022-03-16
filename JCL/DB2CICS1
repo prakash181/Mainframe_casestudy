@@ -1,0 +1,22 @@
+//OZA037CD JOB OZA,OZA,MSGLEVEL=(1,1),                                  00010000
+//            CLASS=A,MSGCLASS=A,NOTIFY=&SYSUID,REGION=4M               00020000
+//***************************************************                   00030000
+//*KEEP USERID IN PLACE OF OZA037 IN JOBNAME OZA063CD                   00040000
+//*SAMPLE JCL TO COMPILE COBOL DB2 CICS PROGRAM                         00041000
+//*DO NOT CHANGE LOADLIB=OZASUP.CICS.LOADLIB                            00042000
+//*ALL CICS RELATED LOAD MODULES SHOULD BE KEPT IN                      00043000
+//*THE PDS OZASUP.CICS.LOADLIB ONLY                                     00044000
+//*MEM --->  DBRM NAME SHOULD BE SAME AS PROGRAM NAME                   00045000
+//***************************************************                   00046000
+//JOBPROC  JCLLIB ORDER=OZASUP.SUP.PROCLIB                              00047000
+//DB2CICS  EXEC DB2CICS,                                                00048000
+//             DBRMLIB='OZA037.DB2.DBRMLIB',                            00049000
+//             DB2COPY='OZA037.DB2.DCLGEN',                             00050000
+//             COPYLIB='OZA037.CICS.COPYLIB',                           00060000
+//             LOADLIB='OZASUP.CICS.LOADLIB',                           00070000
+//             MEM=OZA037PL                                             00080000
+//SYSIN    DD  DSN=OZA037.CICS.CASESTUD(ACCPGM),DISP=SHR                00090000
+//LKED.SYSIN    DD  *                                                   00100000
+  INCLUDE SYSLIB(DSNCLI)                                                00110000
+  NAME OZA037PL(R)                                                      00120000
+//                                                                      00130000

@@ -1,0 +1,27 @@
+//OZA037P JOB OZA,OZA,MSGLEVEL=(1,1),CLASS=B,                           00021043
+//             MSGCLASS=A,NOTIFY=&SYSUID,REGION=6M                      00022028
+//JOBLIB   DD DISP=SHR,DSN=DSNA10.SDSNEXIT                              00030014
+//         DD DISP=SHR,DSN=DSNA10.SDSNLOAD                              00040014
+//         DD DISP=SHR,DSN=CEE.SCEERUN                                  00050000
+//         DD DISP=SHR,DSN=OZASUP.STORPROC.LOAD                         00051021
+//         DD DISP=SHR,DSN=OZA037.DB2.LOADLIB                           00052058
+//BINDPLAN EXEC PGM=IKJEFT01,DYNAMNBR=20                                00060000
+//DBRMLIB  DD DSN=OZA037.DB2.DBRMLIB,DISP=SHR                           00070043
+//DD1      DD DSN=OZA037.DB2.TRANSFIL,DISP=SHR                          00071050
+//DD2      DD DSN=OZA037.DB2.ERRORFIL,DISP=SHR                          00072050
+//DD3      DD DSN=OZA037.DB2.REPRTFIL,DISP=SHR                          00073051
+//SYSTSPRT DD SYSOUT=*                                                  00080000
+//SYSPRINT DD SYSOUT=*                                                  00100000
+//SYSUDUMP DD SYSOUT=*                                                  00110000
+//SYSOUT   DD SYSOUT=*                                                  00120000
+//*STATEMENTS FOR PROGRAM DB2PGM IN OZASUP.SUP.SOURCE                   00120415
+//SYSTSIN DD *                                                          00120515
+ DSN SYSTEM(DSN)                                                        00120615
+ BIND PACKAGE(OZA037PK) MEMBER(DB2MAIN) ACT(REP)-                       00120756
+      ISOLATION(CS)                                                     00120815
+ BIND PLAN(OZA037PL) PKLIST(OZA037PK.*) MEMBER(RPTPRO) ACT(REP)-        00120957
+      ISOLATION(CS)                                                     00121055
+ RUN  PROGRAM(DB2MAIN) PLAN(OZA037PL) -                                 00121152
+      LIB('OZA037.DB2.LOADLIB') PARM('LIB,NODYNAM')                     00121254
+ END                                                                    00121315
+//                                                                      00121415

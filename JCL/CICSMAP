@@ -1,0 +1,17 @@
+//OZA037CM JOB OZA,OZA,MSGLEVEL=(1,1),                                  00010015
+//            CLASS=A,MSGCLASS=A,NOTIFY=&SYSUID,REGION=6M               00020000
+//***************************************************                   00021000
+//*KEEP USERID IN PLACE OF OZA037 IN JOBNAME OZA063CM                   00022015
+//*SAMPLE JCL TO COMPILE CICS MAP SOURCE                                00023000
+//*DO NOT CHANGE LOADLIB=OZASUP.CICS.LOADLIB                            00024000
+//*ALL CICS RELATED LOAD MODULES SHOULD BE KEPT IN                      00025000
+//*THE PDS OZASUP.CICS.LOADLIB ONLY                                     00026000
+//***************************************************                   00027000
+//JOBPROC  JCLLIB ORDER=OZASUP.SUP.PROCLIB                              00030000
+//CICSMAP  EXEC CICSMAP,                                                00040000
+//         OUTC=*,                                                      00050000
+//         COPYLIB=OZA037.CICS.COPYLIB,     *SYMBOLIC MAP COPYLIB       00060015
+//         LOADLIB=OZASUP.CICS.LOADLIB, *PHYSICAL MAP                   00070000
+//         MAPNAME=MAP037H                  *NAME OF MAPSET             00081028
+//COPY.SYSUT1  DD  DSN=OZA037.CICS.CASESTUD(ACCMAP),DISP=SHR            00090030
+//                                                                      00100000

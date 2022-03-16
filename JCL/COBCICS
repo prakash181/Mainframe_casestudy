@@ -1,0 +1,19 @@
+//OZA037C JOB OZA,OZA,MSGLEVEL=(1,1),                                   00010048
+//            CLASS=A,MSGCLASS=A,NOTIFY=&SYSUID,REGION=6M               00020000
+//***************************************************                   00030000
+//*KEEP USERID IN PLACE OF OZA037 IN JOBNAME OZA063CC                   00040049
+//*SAMPLE JCL TO COMPILE COBOL CICS PROGRAM                             00050000
+//*DO NOT CHANGE LOADLIB=OZASUP.CICS.LOADLIB                            00060000
+//*ALL CICS RELATED LOAD MODULES SHOULD BE KEPT IN                      00070000
+//*THE PDS OZASUP.CICS.LOADLIB ONLY                                     00080000
+//***************************************************                   00090000
+//JOBPROC  JCLLIB ORDER=OZASUP.SUP.PROCLIB                              00100000
+//CICSCOB  EXEC CICSCOB,                                                00110000
+//             COPYLIB=OZA037.CICS.COPYLIB,                             00130049
+//*            COPYLIB=OZA037.DB2.DCLGEN,                               00140049
+//             LOADLIB=OZASUP.CICS.LOADLIB                              00150033
+//TRN.SYSIN  DD DSN=OZA037.CICS.CASESTUD(BRSXCTL),DISP=SHR              00180057
+//*STATEMENTS FOR CICMAPGM PROGRAM                                      00190000
+//LKED.SYSIN DD  *                                                      00200000
+  NAME PGM037GH(R)                                                      00210058
+//                                                                      00220000

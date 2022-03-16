@@ -1,0 +1,25 @@
+//OZA037CB JOB OZA,OZA,MSGLEVEL=(1,1),                                  00010011
+//            CLASS=A,MSGCLASS=A,NOTIFY=&SYSUID,REGION=4M               00020000
+//***************************************************                   00021003
+//*KEEP USERID IN PLACE OF OZA037 IN JOBNAME OZA063CB                   00022011
+//*SAMPLE JCL TO BIND COBOL DB2 CICS PROGRAM                            00023003
+//*PLAN,DBRM AND PROGRAM NAMES SHOULD BE SAME                           00027003
+//***************************************************                   00028003
+//JOBLIB   DD DISP=SHR,DSN=DSNA10.SDSNEXIT                              00030004
+//         DD DISP=SHR,DSN=DSNA10.SDSNLOAD                              00040004
+//         DD DISP=SHR,DSN=CEE.SCEERUN                                  00050000
+//BINDPLAN EXEC PGM=IKJEFT01,DYNAMNBR=20                                00060000
+//DBRMLIB  DD DSN=OZA037.DB2.DBRMLIB,DISP=SHR                           00071011
+//SYSTSPRT DD SYSOUT=*                                                  00080000
+//SYSTSPRT DD SYSOUT=*                                                  00090000
+//SYSPRINT DD SYSOUT=*                                                  00100000
+//SYSUDUMP DD SYSOUT=*                                                  00110000
+//SYSOUT   DD SYSOUT=*                                                  00120000
+//SYSTSIN DD *   PLAN,DBRM AND PROGRAM NAMES SHOULD BE SAME             00130003
+ DSN SYSTEM(DSN)                                                        00140000
+  BIND PACKAGE(OZA037PK) MEMBER(OZA037PL) ACT(REP)-                     00141014
+       ISOLATION(CS)                                                    00142013
+  BIND PLAN(OZA037PL) PKLIST(OZA037PK.*) MEMBER(OZA037P1) ACT(REP)-     00150013
+       ISOLATION(CS) QUALIFIER(OZA037) OWNER(OZA037)                    00151013
+ END                                                                    00170001
+//                                                                      00190001

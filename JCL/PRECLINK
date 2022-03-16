@@ -1,0 +1,15 @@
+//OZA037PL JOB OZA,OZA,MSGLEVEL=(1,1),                                  00010058
+//             CLASS=A,MSGCLASS=A,NOTIFY=&SYSUID,REGION=6M              00020008
+// SET PROGNAME=DB2MAIN                                                 00021074
+//JOBPROC  JCLLIB ORDER=OZASUP.SUP.PROCLIB                              00040000
+//DB2ICOB  EXEC PRECLINK,PARM.COB='LIB,OBJECT,APOST,DYNAM',             00050066
+//    COPYLIB='OZA037.DB2.DCLGEN',                                      00060058
+//    DBRMLIB='OZA037.DB2.DBRMLIB',                                     00070058
+//    LOADLIB='OZA037.DB2.LOADLIB',                                     00080058
+//    MEM=&PROGNAME,                                                    00100049
+//    LMOD=&PROGNAME                                                    00110049
+//SYSIN DD  DSN=OZA037.DB2.CASESTUD(&PROGNAME),DISP=SHR                 00131062
+//LKED.SYSIN   DD *                                                     00160006
+       INCLUDE SYSLIB(DSNELI)                                           00170042
+/*                                                                      00180006
+//                                                                      00190000
