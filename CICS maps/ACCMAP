@@ -1,0 +1,124 @@
+MAP037C DFHMSD TYPE=&SYSPARM,                                          X00010012
+               MODE=INOUT,                                             X00020001
+               LANG=COBOL,                                             X00030001
+               TIOAPFX=YES,                                            X00040032
+               MAPATTS=COLOR,DSATTS=COLOR                               00041032
+ACCMAP  DFHMDI SIZE=(24,80),                                           X00050010
+               LINE=1,                                                 X00060001
+               COLUMN=1                                                 00070000
+        DFHMDF POS=(2,26),                                             X00080014
+               INITIAL='ACCOUNT MAINTENANCE',                          X00090008
+               LENGTH=19,COLOR=YELLOW,                                 X00100038
+               ATTRB=ASKIP                                              00110000
+        DFHMDF POS=(2,65),                                             X00111001
+               INITIAL='DATE:',                                        X00112001
+               LENGTH=05,COLOR=BLUE,                                   X00113038
+               ATTRB=ASKIP                                              00114001
+DDATE   DFHMDF POS=(2,71),                                             X00115007
+               INITIAL='--/--/--',                                     X00116001
+               LENGTH=08,                                              X00117001
+               ATTRB=PROT                                               00118001
+        DFHMDF POS=(3,65),                                             X00119001
+               INITIAL='TIME:',                                        X00119101
+               LENGTH=05,COLOR=BLUE,                                   X00119235
+               ATTRB=ASKIP                                              00119301
+TTIME   DFHMDF POS=(3,71),                                             X00119407
+               INITIAL='--/--/--',                                     X00119501
+               LENGTH=08,                                              X00119601
+               ATTRB=PROT                                               00119701
+        DFHMDF POS=(5,02),                                             X00119809
+               INITIAL='ACCOUNT NUMBER       :',                       X00119927
+               LENGTH=23,COLOR=BLUE,                                   X00120038
+               ATTRB=ASKIP                                              00120101
+ACCNUM  DFHMDF POS=(5,27),                                             X00120226
+               INITIAL=' ',                                            X00120318
+               LENGTH=09,                                              X00120428
+               ATTRB=(UNPROT,IC,FSET)                                   00120505
+        DFHMDF POS=(5,38),                                             X00120628
+               LENGTH=01,                                              X00120801
+               ATTRB=ASKIP                                              00120901
+        DFHMDF POS=(7,02),                                             X00121014
+               INITIAL='CUSTOMER NAME        :',                       X00121114
+               LENGTH=23,COLOR=BLUE,                                   X00121238
+               ATTRB=ASKIP                                              00121301
+CNAME   DFHMDF POS=(7,26),                                             X00121416
+               INITIAL=' ',                                            X00121518
+               LENGTH=20,                                              X00121609
+               ATTRB=(UNPROT,FSET)                                      00121729
+        DFHMDF POS=(7,48),                                             X00121816
+               LENGTH=01,                                              X00121901
+               ATTRB=ASKIP                                              00122001
+        DFHMDF POS=(9,02),                                             X00122114
+               INITIAL='GENDER               :',                       X00122216
+               LENGTH=23,COLOR=BLUE,                                   X00122338
+               ATTRB=ASKIP                                              00122401
+GENDER  DFHMDF POS=(9,26),                                             X00122514
+               INITIAL=' ',                                            X00122618
+               LENGTH=01,                                              X00122709
+               ATTRB=(UNPROT,FSET)                                      00122829
+        DFHMDF POS=(9,29),                                             X00122914
+               LENGTH=01,                                              X00123001
+               ATTRB=PROT                                               00123101
+        DFHMDF POS=(11,02),                                            X00123214
+               INITIAL='ACCOUNT TYPE         :',                       X00123314
+               LENGTH=23,COLOR=BLUE,                                   X00123438
+               ATTRB=ASKIP                                              00123510
+ATYPE   DFHMDF POS=(11,26),                                            X00123614
+               INITIAL=' ',                                            X00123718
+               LENGTH=02,                                              X00123810
+               ATTRB=(UNPROT,FSET)                                      00123929
+        DFHMDF POS=(11,30),                                            X00124015
+               LENGTH=01,                                              X00124110
+               ATTRB=ASKIP                                              00124210
+        DFHMDF POS=(13,02),                                            X00124314
+               INITIAL='AMOUNT               :',                       X00124414
+               LENGTH=23,COLOR=BLUE,                                   X00124538
+               ATTRB=ASKIP                                              00124610
+AMOUNT  DFHMDF POS=(13,26),                                            X00124714
+               LENGTH=09,                                              X00124921
+               ATTRB=(UNPROT,FSET),                                    X00125029
+               PICIN='9(6)V999',                                       X00125125
+               PICOUT='ZZ9(4).99'                                       00125231
+        DFHMDF POS=(13,37),                                            X00125323
+               LENGTH=01,                                              X00125423
+               ATTRB=ASKIP                                              00125523
+        DFHMDF POS=(15,02),                                            X00125623
+               INITIAL='DATE OF OPENING      :',                       X00125723
+               LENGTH=23,COLOR=BLUE,                                   X00125838
+               ATTRB=ASKIP                                              00125923
+DATOFO  DFHMDF POS=(15,26),                                            X00126023
+               INITIAL=' ',                                            X00126123
+               LENGTH=10,                                              X00126223
+               ATTRB=(UNPROT,FSET)                                      00126330
+        DFHMDF POS=(15,38),                                            X00126423
+               LENGTH=01,                                              X00126523
+               ATTRB=ASKIP                                              00126623
+        DFHMDF POS=(17,02),                                            X00126723
+               INITIAL='BRANCH LOCATION      :',                       X00126823
+               LENGTH=23,COLOR=BLUE,                                   X00126938
+               ATTRB=ASKIP                                              00127023
+BLOC    DFHMDF POS=(17,26),                                            X00127123
+               INITIAL=' ',                                            X00127223
+               LENGTH=10,                                              X00127323
+               ATTRB=(UNPROT,FSET)                                      00127430
+        DFHMDF POS=(17,38),                                            X00127523
+               LENGTH=01,                                              X00127623
+               ATTRB=ASKIP                                              00127723
+        DFHMDF POS=(20,15),                                            X00127829
+               INITIAL='MESSAGE  :',                                   X00127923
+               LENGTH=10,COLOR=RED,                                    X00128035
+               ATTRB=ASKIP                                              00128123
+MSG     DFHMDF POS=(20,27),                                            X00128229
+               INITIAL='',                                             X00128323
+               LENGTH=40,                                              X00128423
+               ATTRB=PROT                                               00128523
+        DFHMDF POS=(22,02),                                            X00128623
+               INITIAL='F1:OPEN    F2:VIEW    F3:UPDATE    F4:CLOSE',  X00128723
+               LENGTH=43,COLOR=YELLOW,                                 X00128835
+               ATTRB=ASKIP                                              00128923
+        DFHMDF POS=(22,46),                                            X00129023
+               INITIAL=' F5:REFRESH   F6:BROWSE   F7:EXIT',            X00129123
+               LENGTH=34,COLOR=YELLOW,                                 X00129235
+               ATTRB=ASKIP                                              00129323
+        DFHMSD TYPE=FINAL                                               00129423
+        END                                                             00130001

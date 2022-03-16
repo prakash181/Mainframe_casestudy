@@ -1,0 +1,75 @@
+MAP037D DFHMSD TYPE=&SYSPARM,                                          X00010016
+               MODE=INOUT,                                             X00020000
+               LANG=COBOL,                                             X00030000
+               TIOAPFX=YES,                                            X00040017
+               MAPATTS=COLOR,DSATTS=COLOR                               00041017
+BROWSE  DFHMDI SIZE=(24,80),                                           X00050000
+               LINE=1,                                                 X00060000
+               COLUMN=1                                                 00070000
+        DFHMDF POS=(2,26),                                             X00080000
+               INITIAL='ACCOUNT HISTORY    ',                          X00090000
+               LENGTH=19,COLOR=YELLOW,                                 X00100017
+               ATTRB=ASKIP                                              00110000
+        DFHMDF POS=(2,62),                                             X00111017
+               INITIAL='DATE:',                                        X00112000
+               LENGTH=05,COLOR=BLUE,                                   X00113017
+               ATTRB=ASKIP                                              00114000
+DDATE   DFHMDF POS=(2,69),                                             X00115017
+               INITIAL='--/--/----',                                   X00116017
+               LENGTH=10,                                              X00117017
+               ATTRB=PROT                                               00118000
+        DFHMDF POS=(3,62),                                             X00119017
+               INITIAL='TIME:',                                        X00119100
+               LENGTH=05,COLOR=BLUE,                                   X00119217
+               ATTRB=ASKIP                                              00119300
+TTIME   DFHMDF POS=(3,69),                                             X00119417
+               INITIAL='--/--/--',                                     X00119500
+               LENGTH=08,                                              X00119600
+               ATTRB=PROT                                               00119700
+        DFHMDF POS=(5,01),                                             X00119812
+               INITIAL='ACNT_NUMBER',                                  X00119903
+               LENGTH=11,COLOR=BLUE,                                   X00120018
+               ATTRB=ASKIP                                              00120100
+        DFHMDF POS=(5,15),                                             X00120912
+               INITIAL='CUST_NAME ',                                   X00121003
+               LENGTH=10,COLOR=BLUE,                                   X00121118
+               ATTRB=ASKIP                                              00121200
+        DFHMDF POS=(5,29),                                             X00122015
+               INITIAL='GENDER ',                                      X00122103
+               LENGTH=07,COLOR=BLUE,                                   X00122218
+               ATTRB=ASKIP                                              00122300
+        DFHMDF POS=(5,37),                                             X00123114
+               INITIAL='ACNT_TYPE ',                                   X00123203
+               LENGTH=10,COLOR=BLUE,                                   X00123318
+               ATTRB=ASKIP                                              00123400
+        DFHMDF POS=(5,48),                                             X00124212
+               INITIAL='AMOUNT ',                                      X00124303
+               LENGTH=07,COLOR=BLUE,                                   X00124418
+               ATTRB=ASKIP                                              00124500
+        DFHMDF POS=(5,57),                                             X00125414
+               INITIAL='  DATE',                                       X00125514
+               LENGTH=06,COLOR=BLUE,                                   X00125618
+               ATTRB=ASKIP                                              00125700
+        DFHMDF POS=(5,65),                                             X00126514
+               INITIAL='BRANCH_LOCATION',                              X00126603
+               LENGTH=15,COLOR=BLUE,                                   X00126718
+               ATTRB=ASKIP                                              00126800
+LINE    DFHMDF POS=(6,01),                                             X00127004
+               INITIAL=' ',                                            X00128010
+               LENGTH=79,                                              X00128104
+               ATTRB=(ASKIP,NORM,PROT),COLOR=GREEN,                    X00128217
+               OCCURS=5                                                 00128304
+        DFHMDF POS=(16,16),                                            X00128411
+               INITIAL='MESSAGE :',                                    X00128509
+               LENGTH=9,COLOR=RED,                                     X00128617
+               ATTRB=ASKIP                                              00128709
+MSG     DFHMDF POS=(16,27),                                            X00128811
+               INITIAL='______________________________________',       X00128907
+               LENGTH=40,                                              X00129007
+               ATTRB=PROT                                               00129109
+        DFHMDF POS=(22,24),                                            X00129201
+               INITIAL='F3:GOBACK   F7:UP   F8:DOWN        ',          X00129319
+               LENGTH=35,COLOR=YELLOW,                                 X00129419
+               ATTRB=ASKIP                                              00129500
+        DFHMSD TYPE=FINAL                                               00129600
+        END                                                             00129700
