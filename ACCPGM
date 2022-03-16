@@ -1,0 +1,307 @@
+       ID DIVISION.                                                     00010000
+       PROGRAM-ID ACCPGM.                                               00020008
+       DATA DIVISION.                                                   00030000
+       WORKING-STORAGE SECTION.                                         00040000
+       COPY MAP037C.                                                    00050008
+       COPY DFHAID.                                                     00060000
+       COPY DFHBMSCA.                                                   00070000
+       01 SND-TXT.                                                      00080000
+          02 SND-TEXT   PIC X(30).                                      00090000
+          02 SND-LEN    PIC S9(4) COMP.                                 00100000
+       01 WS-COMMAREA.                                                  00110000
+          05 COM-MSG    PIC XXX VALUE 'SEN'.                            00120005
+          05 COM-LEN    PIC S9(4) COMP.                                 00130000
+           EXEC SQL                                                     00131000
+              INCLUDE ACCTBL                                            00132008
+           END-EXEC.                                                    00133001
+           EXEC SQL                                                     00134001
+              INCLUDE SQLCA                                             00135001
+           END-EXEC.                                                    00136001
+       01 FILLER        PIC X(10).                                      00137043
+       77 LOCI          PIC S9(4) COMP.                                 00140003
+       77 WS-RESP-CD    PIC S9(8) COMP.                                 00150004
+       LINKAGE SECTION.                                                 00200000
+       01 DFHCOMMAREA   PIC XXX.                                        00210000
+       PROCEDURE DIVISION.                                              00220000
+           IF EIBCALEN = 0                                              00222000
+              MOVE LOW-VALUES   TO ACCMAPO                              00223009
+              PERFORM SEND-MAP                                          00224000
+              PERFORM COND-RETURN                                       00225000
+           ELSE                                                         00226000
+              PERFORM RECEIVE-PARA                                      00227000
+              EVALUATE EIBAID                                           00228000
+              WHEN DFHPF1                                               00229000
+                PERFORM OPEN-BANK-ACC                                   00230013
+                MOVE 'OPE'  TO WS-COMMAREA                              00240011
+                PERFORM COND-RETURN                                     00250000
+              WHEN DFHPF2                                               00260000
+                PERFORM VIEW-ACC                                        00270011
+                MOVE 'VIW'  TO WS-COMMAREA                              00280011
+                PERFORM COND-RETURN                                     00290000
+              WHEN DFHPF7                                               00300011
+                MOVE 'THANK YOU ' TO SND-TEXT                           00310000
+                PERFORM SEND-PARA                                       00320000
+                PERFORM RETURN-PARA                                     00330000
+              WHEN DFHPF3                                               00340011
+                MOVE DFHCOMMAREA TO WS-COMMAREA                         00350034
+                IF WS-COMMAREA = 'SEN'                                  00361234
+                   PERFORM READ-DEL                                     00361334
+                   MOVE 'UPD'    TO WS-COMMAREA                         00361434
+                   PERFORM COND-RETURN                                  00361534
+                ELSE                                                    00361634
+                   PERFORM OPEN-BANK-ACC                                00361734
+                   MOVE 'SEN'    TO WS-COMMAREA                         00361834
+                   PERFORM COND-RETURN                                  00361934
+                END-IF                                                  00362034
+              WHEN DFHPF4                                               00362111
+                MOVE DFHCOMMAREA TO WS-COMMAREA                         00362202
+                IF WS-COMMAREA = 'SEN'                                  00362302
+                   PERFORM READ-DEL                                     00362402
+                   MOVE 'DEL'    TO WS-COMMAREA                         00362502
+                   PERFORM COND-RETURN                                  00362602
+                ELSE                                                    00362702
+                   PERFORM DEL-TBL                                      00362802
+                   MOVE 'SEN'    TO WS-COMMAREA                         00362902
+                   PERFORM COND-RETURN                                  00363002
+                END-IF                                                  00364002
+              WHEN DFHPF5                                               00366021
+                MOVE 'SEN'        TO WS-COMMAREA                        00366125
+                MOVE LOW-VALUES   TO ACCMAPO                            00367011
+                MOVE DFHUNIMD               TO ACCNUMA                  00367117
+                PERFORM SEND-MAP                                        00368000
+                PERFORM COND-RETURN                                     00369000
+              WHEN DFHPF6                                               00369138
+                PERFORM BROWSE-PARA                                     00369238
+                PERFORM COND-RETURN                                     00369338
+              WHEN OTHER                                                00370000
+                MOVE 'INCORRECT AID KEY'  TO MSGO                       00380000
+                PERFORM SEND-MAP                                        00390000
+                PERFORM COND-RETURN                                     00400000
+              END-EVALUATE                                              00410000
+            EXEC CICS RETURN                                            00420000
+            END-EXEC                                                    00430000
+           END-IF.                                                      00440000
+       COND-RETURN.                                                     00450000
+              MOVE LENGTH OF WS-COMMAREA TO COM-LEN                     00460000
+              EXEC CICS RETURN                                          00470000
+                TRANSID('T37F')                                         00480038
+                COMMAREA(WS-COMMAREA)                                   00490000
+                LENGTH(COM-LEN)                                         00500000
+              END-EXEC.                                                 00510000
+       VIEW-ACC.                                                        00520013
+           IF ACCNUMI NOT = SPACES                                      00521017
+             MOVE ACCNUMI              TO HV-ACC-NO                     00530013
+             EXEC SQL                                                   00550013
+                  SELECT CUST_NAME,GENDER,ACC_TYPE,AMOUNT,              00551013
+                         ACC_OPEN_DATE,BRANCH_LOC                       00551113
+                  INTO :HV-CUST-NAME,:HV-GENDER,:HV-ACC-TYPE,           00552013
+                       :HV-AMOUNT,:HV-ACC-OPEN-DATE,                    00552113
+                       :HV-BRANCH-LOC                                   00552223
+                  FROM ACCOUNT                                          00553013
+                  WHERE ACC_NO = :HV-ACC-NO                             00554013
+             END-EXEC                                                   00556013
+             IF SQLCODE  = 0                                            00557013
+                MOVE HV-CUST-NAME-TEXT  TO CNAMEO                       00558024
+                MOVE HV-GENDER          TO GENDERO                      00558113
+                MOVE HV-ACC-TYPE        TO ATYPEO                       00558213
+                MOVE HV-ACC-OPEN-DATE   TO DATOFOO                      00558317
+                MOVE HV-AMOUNT          TO AMOUNTO                      00558413
+                MOVE HV-BRANCH-LOC-TEXT TO BLOCO                        00559023
+                MOVE "REQUIRED ACCOUNT DETAILS AND DISPLAYED" TO MSGO   00559223
+              ELSE                                                      00559300
+                IF SQLCODE = 100                                        00559413
+                  MOVE "ENTERED ACCOUNT NUMBER IS NOT PRESENT" TO MSGO  00559513
+                ELSE                                                    00559613
+                  MOVE SQLCODE            TO MSGO                       00559713
+                END-IF                                                  00559813
+              END-IF                                                    00559913
+           ELSE                                                         00560017
+             MOVE "ENTER THE ACCOUNT NUMBER" TO MSGO                    00560117
+           END-IF.                                                      00560217
+           PERFORM SEND-MAP.                                            00561017
+       OPEN-BANK-ACC.                                                   00570013
+           IF CNAMEI NOT = SPACES                                       00600013
+             MOVE CNAMEI TO HV-CUST-NAME-TEXT                           00610027
+             MOVE LENGTH OF CNAMEI TO HV-CUST-NAME-LEN                  00611027
+             PERFORM GENDER-CHECK                                       00612029
+           ELSE                                                         00770313
+              MOVE "PLEASE ENTER THE CUSTOMER NAME" TO MSGO             00770413
+           END-IF.                                                      00770513
+           PERFORM SEND-MAP.                                            00770613
+       GENDER-CHECK.                                                    00770729
+           IF GENDERI NOT = SPACES                                      00770929
+              MOVE GENDERI TO HV-GENDER                                 00771029
+              EVALUATE HV-GENDER                                        00771129
+                 WHEN 'M' PERFORM TYPE-CHECK                            00771230
+                 WHEN 'F' PERFORM TYPE-CHECK                            00771330
+                 WHEN OTHER MOVE "ENTER VALID GENDER" TO MSGO           00771429
+              END-EVALUATE                                              00771529
+           ELSE                                                         00771629
+              MOVE "PLEASE ENTER THE GENDER" TO MSGO                    00771729
+           END-IF.                                                      00771829
+       TYPE-CHECK.                                                      00771929
+           IF ATYPEI NOT = SPACES                                       00772029
+              MOVE ATYPEI TO HV-ACC-TYPE                                00772129
+              EVALUATE HV-ACC-TYPE                                      00772229
+                WHEN 'SB' PERFORM AMOUNT-CHECK                          00772329
+                WHEN 'RD' PERFORM AMOUNT-CHECK                          00772429
+                WHEN 'FD' PERFORM AMOUNT-CHECK                          00772529
+                WHEN OTHER MOVE "ENTER VALID ACCOUNT TYPE" TO MSGO      00772629
+              END-EVALUATE                                              00772729
+           ELSE                                                         00772829
+              MOVE "ENTER THE ACCOUNT TYPE" TO MSGO                     00772929
+           END-IF.                                                      00773029
+       AMOUNT-CHECK.                                                    00773129
+           IF AMOUNTI >= 1                                              00773229
+              EVALUATE HV-ACC-TYPE                                      00773429
+                WHEN 'SB' PERFORM ACCTYPE-ONE                           00773529
+                WHEN 'RD' PERFORM ACCTYPE-ONE                           00773629
+                WHEN 'FD' PERFORM ACCTYPE-TWO                           00773729
+                WHEN OTHER MOVE "INCORRECT TYPE" TO MSGO                00773829
+              END-EVALUATE                                              00773929
+           ELSE                                                         00774729
+              MOVE "PLEASE ENTER THE AMOUNT" TO MSGO                    00774829
+           END-IF.                                                      00774929
+       ACCTYPE-ONE.                                                     00775813
+           IF AMOUNTI >= 1000                                           00775913
+              MOVE AMOUNTI TO HV-AMOUNT                                 00776013
+              PERFORM LOCATION-CHECK                                    00776131
+           ELSE                                                         00776213
+              MOVE "AMOUNT SHOULD BE GREATER THAN 1000" TO MSGO         00776313
+           END-IF.                                                      00776417
+       ACCTYPE-TWO.                                                     00776513
+           IF AMOUNTI >= 5000                                           00776613
+              MOVE AMOUNTI TO HV-AMOUNT                                 00776713
+              PERFORM LOCATION-CHECK                                    00776831
+           ELSE                                                         00776913
+              MOVE "AMOUNT SHOULD BE GREATER THAN 5000" TO MSGO         00777013
+           END-IF.                                                      00777113
+       LOCATION-CHECK.                                                  00777231
+           IF BLOCI NOT = SPACES                                        00777331
+              MOVE BLOCI TO HV-BRANCH-LOC-TEXT                          00777431
+              MOVE LENGTH OF BLOCI TO HV-BRANCH-LOC-LEN                 00777531
+              EVALUATE EIBAID                                           00777731
+                 WHEN DFHPF1 PERFORM INSERT-REC                         00777831
+                 WHEN DFHPF3 PERFORM UPDATE-REC                         00777932
+              END-EVALUATE                                              00778031
+           ELSE                                                         00778131
+              MOVE "ENTER THE BRANCH LOCATION" TO MSGO                  00778231
+           END-IF.                                                      00778331
+       INSERT-REC.                                                      00778413
+           EXEC SQL                                                     00778513
+              INSERT INTO ACCOUNT(CUST_NAME,GENDER,ACC_TYPE,AMOUNT,     00778618
+                                  BRANCH_LOC)                           00778720
+              VALUES(:HV-CUST-NAME,                                     00778818
+                     :HV-GENDER,:HV-ACC-TYPE,                           00778918
+                     :HV-AMOUNT,                                        00779020
+                     :HV-BRANCH-LOC)                                    00779118
+           END-EXEC                                                     00779213
+           IF SQLCODE = 0                                               00779313
+              MOVE "ACCOUNT OPENED SUCESSFULLY" TO MSGO                 00779413
+           ELSE                                                         00779513
+              MOVE SQLCODE TO MSGO                                      00779613
+           END-IF.                                                      00779713
+       UPDATE-REC.                                                      00780932
+           EXEC SQL                                                     00781032
+              UPDATE ACCOUNT                                            00781132
+              SET CUST_NAME=:HV-CUST-NAME,AMOUNT = :HV-AMOUNT,          00781232
+              BRANCH_LOC = :HV-BRANCH-LOC                               00781336
+              WHERE ACC_NO = :HV-ACC-NO                                 00781432
+           END-EXEC                                                     00781532
+           IF SQLCODE = 0                                               00781632
+              MOVE 'UPDATE  SUCCESS'   TO MSGO                          00781742
+           ELSE                                                         00781832
+              IF SQLCODE = 100                                          00781932
+                 MOVE 'REC NOT FOUND'  TO MSGO                          00782032
+              ELSE                                                      00782132
+                 MOVE SQLCODE          TO MSGO                          00782232
+              END-IF                                                    00782332
+           END-IF.                                                      00782432
+       READ-DEL.                                                        00782502
+           IF ACCNUMI NOT = SPACES                                      00782617
+              MOVE ACCNUMI                   TO HV-ACC-NO               00782714
+              EXEC SQL                                                  00782802
+                  SELECT CUST_NAME,GENDER,ACC_TYPE,AMOUNT,              00782915
+                         ACC_OPEN_DATE,BRANCH_LOC                       00783015
+                  INTO :HV-CUST-NAME,:HV-GENDER,:HV-ACC-TYPE,           00783116
+                       :HV-AMOUNT,:HV-ACC-OPEN-DATE,                    00783216
+                       :HV-BRANCH-LOC:LOCI                              00783316
+                  FROM ACCOUNT                                          00783415
+                  WHERE ACC_NO = :HV-ACC-NO                             00783515
+              END-EXEC                                                  00783602
+           IF SQLCODE = 0                                               00783735
+             MOVE HV-CUST-NAME-TEXT      TO CNAMEO                      00783834
+             MOVE HV-GENDER              TO GENDERO                     00783934
+             MOVE HV-ACC-TYPE            TO ATYPEO                      00784034
+             MOVE HV-AMOUNT              TO AMOUNTO                     00784134
+             MOVE HV-ACC-OPEN-DATE       TO DATOFOO                     00784234
+             MOVE HV-BRANCH-LOC-TEXT     TO BLOCO                       00784334
+             EVALUATE EIBAID                                            00784534
+               WHEN DFHPF3 MOVE "ENTER THE VALUES TO BE UPDATED" TO MSGO00784634
+               WHEN DFHPF4 MOVE "ENTER PF4 TO CONFIRM" TO MSGO          00784734
+             END-EVALUATE                                               00784834
+             MOVE  DFHBMPRF              TO ACCNUMA                     00784934
+           ELSE                                                         00785034
+              MOVE SQLCODE                TO MSGO                       00785134
+           END-IF                                                       00785234
+           ELSE                                                         00785315
+              MOVE "ENTER THE ACCOUNT NUMBER" TO MSGO                   00785415
+           END-IF.                                                      00785515
+           PERFORM SEND-MAP.                                            00785615
+       DEL-TBL.                                                         00785702
+              MOVE ACCNUMI                  TO HV-ACC-NO                00785814
+              EXEC SQL                                                  00785902
+                   DELETE FROM ACCOUNT                                  00786016
+                   WHERE ACC_NO = :HV-ACC-NO                            00786114
+              END-EXEC                                                  00786200
+              IF SQLCODE = 0                                            00786302
+                 MOVE 'ACCOUNT CLOSED' TO MSGO                          00786442
+              ELSE                                                      00786500
+                 IF SQLCODE = 100                                       00786602
+                    MOVE 'REC NOT FOUND' TO MSGO                        00786700
+                 ELSE                                                   00786800
+                    MOVE SQLCODE          TO MSGO                       00786902
+                 END-IF                                                 00787000
+              END-IF                                                    00787100
+              MOVE DFHUNIMD               TO ACCNUMA                    00787217
+              PERFORM SEND-MAP.                                         00787300
+       DATETIME-PARA.                                                   00787406
+           EXEC CICS ASKTIME  ABSTIME(DDATEO)                           00787506
+           END-EXEC.                                                    00787606
+           EXEC CICS FORMATTIME ABSTIME(DDATEO)                         00787706
+                DATESEP('/') DDMMYYYY(DDATEO)                           00787806
+                TIME(TTIMEO) TIMESEP(':')                               00787906
+           END-EXEC.                                                    00788006
+       SEND-MAP.                                                        00788100
+           PERFORM DATETIME-PARA.                                       00788206
+           EXEC CICS SEND                                               00788300
+                MAP('ACCMAP')                                           00788409
+                MAPSET('MAP037C')                                       00788509
+                ERASE                                                   00788600
+                FREEKB                                                  00788700
+                RESP(WS-RESP-CD)                                        00788800
+           END-EXEC.                                                    00788900
+       RETURN-PARA.                                                     00789000
+           EXEC CICS RETURN                                             00789100
+           END-EXEC.                                                    00789200
+       SEND-PARA.                                                       00789300
+           MOVE LENGTH OF SND-TEXT TO SND-LEN                           00789400
+           EXEC CICS SEND TEXT                                          00789500
+              FROM(SND-TEXT)                                            00789600
+              LENGTH(SND-LEN)                                           00790000
+              ERASE                                                     00800000
+              FREEKB                                                    00810000
+           END-EXEC.                                                    00820000
+       BROWSE-PARA.                                                     00821039
+           EXEC CICS LINK                                               00822039
+             PROGRAM('OZA037P1')                                        00823039
+           END-EXEC                                                     00824040
+           EXEC CICS XCTL                                               00825039
+             PROGRAM('PGM037GH')                                        00826041
+           END-EXEC.                                                    00827039
+       RECEIVE-PARA.                                                    00830000
+           EXEC CICS RECEIVE                                            00840000
+             MAP('ACCMAP')                                              00850009
+             MAPSET('MAP037C')                                          00860009
+             RESP(WS-RESP-CD)                                           00870000
+           END-EXEC.                                                    00880000

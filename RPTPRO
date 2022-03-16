@@ -1,0 +1,88 @@
+       IDENTIFICATION  DIVISION.
+       PROGRAM-ID.     RPTPGM.
+       ENVIRONMENT     DIVISION.
+       INPUT-OUTPUT    SECTION.
+       FILE-CONTROL.
+           SELECT OUTFILE ASSIGN TO DD3
+           FILE STATUS IS FS-3.
+       DATA DIVISION.
+       FILE SECTION.
+       FD OUTFILE.
+       01 OUTREC       PIC X(80).
+       WORKING-STORAGE SECTION.
+           EXEC SQL
+             INCLUDE LOANTSTB
+           END-EXEC.
+           EXEC SQL
+             INCLUDE SQLCA
+           END-EXEC.
+           EXEC SQL
+              DECLARE TCURSOR CURSOR FOR
+              SELECT LNO,CID,TYPE,ODATE,OUTAMT
+              FROM LOAN_TRANS
+              ORDER BY TYPE,CID
+           END-EXEC.
+       77 GRAND-TOT    PIC 9(9)V99.
+       77 FS-3         PIC 99.
+       COPY HEADER.
+       PROCEDURE DIVISION.
+       MAIN-PARA.
+           PERFORM OPEN-PARA
+           EXEC SQL
+              CLOSE TCURSOR
+           END-EXEC
+           WRITE OUTREC FROM WS-LINE
+           WRITE OUTREC FROM WS-HEAD5
+           CLOSE OUTFILE
+           STOP RUN.
+       OPEN-PARA.
+           OPEN OUTPUT OUTFILE
+           IF FS-3 = 0
+              DISPLAY "FILE OPENED SUCCESSFULLY"
+              PERFORM HEADER-PARA
+              PERFORM READ-PARA UNTIL SQLCODE NOT = 0
+           ELSE
+              DISPLAY "OPEN ERROR"
+           END-IF.
+       READ-PARA.
+           EXEC SQL
+              OPEN TCURSOR
+           END-EXEC
+           EXEC SQL
+           FETCH TCURSOR INTO :HV-LNO,:HV-CID,:HV-TYPE,
+           :HV-ODATE,:HV-OUTAMT
+           END-EXEC
+           IF SQLCODE = 0
+              PERFORM DETAIL-PARA
+           ELSE
+              IF SQLCODE = 100
+                 DISPLAY "REACHED END OF THE TABLE"
+              ELSE
+                 DISPLAY 'SQLCODE' SQLCODE
+              END-IF
+           END-IF.
+       HEADER-PARA.
+           MOVE FUNCTION CURRENT-DATE(7:2) TO WS-DAY
+           MOVE FUNCTION CURRENT-DATE(5:2) TO WS-MONTH
+           MOVE FUNCTION CURRENT-DATE(1:4) TO WS-YEAR
+           WRITE OUTREC FROM WS-HEAD1
+           WRITE OUTREC FROM WS-HEAD2
+           WRITE OUTREC FROM WS-HEAD3
+           WRITE OUTREC FROM WS-LINE
+           WRITE OUTREC FROM WS-HEAD4.
+       DETAIL-PARA.
+           MOVE HV-TYPE       TO LN-CATEGORY
+           MOVE HV-CID        TO CUST-ID
+           MOVE HV-LNO        TO LN-NO
+           MOVE HV-ODATE(9:2) TO O-DAY
+           MOVE HV-ODATE(6:2) TO O-MONTH
+           MOVE HV-ODATE(1:4) TO O-YEAR
+           MOVE HV-OUTAMT     TO AMOUNT
+           WRITE OUTREC FROM WS-DETAIL
+           ADD AMOUNT         TO GRAND-TOT
+           MOVE GRAND-TOT     TO TOTAL
+           IF FS-3 = 0
+              DISPLAY 'WRITE SUCESS'
+           ELSE
+              DISPLAY 'WRITE FAILED'
+           END-IF.

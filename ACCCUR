@@ -1,0 +1,67 @@
+       ID DIVISION.                                                     00010000
+       PROGRAM-ID. ACCCUR.                                              00020006
+       ENVIRONMENT DIVISION.                                            00021000
+       DATA DIVISION.                                                   00026000
+       WORKING-STORAGE SECTION.                                         00039900
+       01 ACCREC.                                                       00040011
+          05 WS-ACCNO   PIC 9(9).                                       00040111
+          05 WS-CNAME   PIC X(20).                                      00040211
+          05 WS-GENDER  PIC X(1).                                       00040311
+          05 WS-ACCTYPE PIC X(2).                                       00040415
+          05 WS-AMOUNT  PIC 9(6).9(2).                                  00040511
+          05 WS-DATE    PIC X(10).                                      00040611
+          05 WS-BLOC    PIC X(10).                                      00040711
+           EXEC SQL                                                     00040900
+              INCLUDE ACCTBL                                            00041004
+           END-EXEC.                                                    00042000
+           EXEC SQL                                                     00050000
+              INCLUDE SQLCA                                             00060000
+           END-EXEC.                                                    00070000
+           EXEC SQL                                                     00080000
+              DECLARE ACCCUR CURSOR FOR                                 00090004
+              SELECT ACC_NO,CUST_NAME,GENDER,ACC_TYPE,AMOUNT,           00100004
+              ACC_OPEN_DATE,BRANCH_LOC                                  00100104
+              FROM ACCOUNT                                              00100204
+           END-EXEC.                                                    00100300
+       77  FS-1 PIC 99.                                                 00100600
+       77  RESP-CD PIC S9(8) COMP.                                      00100714
+       PROCEDURE DIVISION.                                              00100800
+       000-MAIN-PARA.                                                   00100900
+           PERFORM 010-OPEN-PARA                                        00101000
+           EXEC SQL                                                     00101100
+               CLOSE ACCCUR                                             00101204
+           END-EXEC.                                                    00101300
+           STOP RUN.                                                    00102000
+       010-OPEN-PARA.                                                   00190000
+           EXEC SQL                                                     00260000
+              OPEN ACCCUR                                               00270004
+           END-EXEC                                                     00271000
+           IF SQLCODE = 0                                               00272000
+              PERFORM 020-FETCH-PARA UNTIL SQLCODE NOT = 0              00273000
+           ELSE                                                         00274000
+              DISPLAY "CURSOR OPEN FAILED" SQLCODE                      00275000
+           END-IF.                                                      00276000
+       020-FETCH-PARA.                                                  00277000
+           MOVE LOW-VALUES TO HV-ACCOUNT, ACCREC                        00277208
+           EXEC SQL                                                     00278000
+              FETCH ACCCUR                                              00279004
+              INTO :HV-ACC-NO,:HV-CUST-NAME,:HV-GENDER,:HV-ACC-TYPE,    00280007
+                    :HV-AMOUNT,:HV-ACC-OPEN-DATE,:HV-BRANCH-LOC         00290004
+           END-EXEC                                                     00300000
+           IF SQLCODE = 0                                               00310000
+              MOVE HV-ACC-NO           TO WS-ACCNO                      00311015
+              MOVE HV-CUST-NAME-TEXT   TO WS-CNAME                      00312015
+              MOVE HV-GENDER           TO WS-GENDER                     00313015
+              MOVE HV-ACC-TYPE         TO WS-ACCTYPE                    00314015
+              MOVE HV-AMOUNT           TO WS-AMOUNT                     00315015
+              MOVE HV-ACC-OPEN-DATE    TO WS-DATE                       00316015
+              MOVE HV-BRANCH-LOC-TEXT  TO WS-BLOC                       00317015
+              EXEC CICS WRITE                                           00318011
+                   FILE('F37V')                                         00319017
+                   FROM(ACCREC)                                         00320011
+                   LENGTH(61)                                           00320115
+                   RIDFLD(WS-ACCNO)                                     00320213
+                   KEYLENGTH(9)                                         00320315
+                   RESP(RESP-CD)                                        00320414
+              END-EXEC                                                  00321016
+           END-IF.                                                      00322016

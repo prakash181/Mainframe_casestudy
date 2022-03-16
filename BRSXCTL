@@ -1,0 +1,161 @@
+       ID DIVISION.                                                     00010001
+       PROGRAM-ID. BRSXCTL.                                             00020022
+       DATA DIVISION.                                                   00030001
+       WORKING-STORAGE SECTION.                                         00040001
+       COPY MAP037D.                                                    00050021
+       COPY DFHAID.                                                     00060006
+       COPY DFHBMSCA.                                                   00070007
+       01 WS-COMMAREA.                                                  00080011
+          05 FIRSTREC   PIC 9(9).                                       00080111
+          05 LASTREC    PIC 9(9).                                       00080211
+       01 WS-REC.                                                       00081005
+          05 WS-ACCNO   PIC 9(9).                                       00082005
+          05 WS-CNAME   PIC X(20).                                      00084005
+          05 WS-GENDER  PIC X(1).                                       00086005
+          05 WS-ACCTYPE PIC X(2).                                       00086205
+          05 WS-AMOUNT  PIC 9(6).9(2).                                  00086405
+          05 WS-DATE    PIC X(10).                                      00086605
+          05 WS-BLOC    PIC X(10).                                      00086805
+       01 WS-REC2.                                                      00087005
+          05 WS-ACCNO1   PIC 9(9).                                      00088005
+          05 FILLER      PIC X(2).                                      00088105
+          05 WS-CNAME1   PIC X(20).                                     00089005
+          05 WS-GENDER1  PIC X(1).                                      00089205
+          05 FILLER      PIC X(6).                                      00089318
+          05 WS-ACCTYPE1 PIC X(2).                                      00089405
+          05 FILLER      PIC X(4).                                      00089518
+          05 WS-AMOUNT1  PIC ZZ9(4).9(2).                               00089618
+          05 FILLER      PIC X(2).                                      00089705
+          05 WS-DATE1    PIC X(10).                                     00089805
+          05 FILLER      PIC X(2).                                      00089905
+          05 WS-BLOC1    PIC X(10).                                     00090005
+       77 RESP-CD        PIC S9(8) COMP.                                00090905
+       77 C-COUNT        PIC 9(1) VALUE 1.                              00091005
+       LINKAGE SECTION.                                                 00095001
+       01 DFHCOMMAREA  PIC 9(18).                                       00100011
+       PROCEDURE DIVISION.                                              00110001
+       MAIN-PARA.                                                       00120001
+           IF EIBCALEN = 0                                              00130008
+             MOVE ZEROES TO WS-ACCNO                                    00140012
+             PERFORM START-BROWSER                                      00150002
+             IF RESP-CD = DFHRESP(NORMAL)                               00160002
+                PERFORM READ-NEXT UNTIL (C-COUNT > 5 OR                 00170002
+                                         RESP-CD NOT = DFHRESP(NORMAL)) 00180006
+             END-IF                                                     00190002
+             PERFORM SEND-BRMAP                                         00200002
+             PERFORM END-BROWSER                                        00210011
+           ELSE                                                         00230002
+              MOVE DFHCOMMAREA TO WS-COMMAREA                           00231011
+              EVALUATE EIBAID                                           00240002
+                 WHEN DFHPF3                                            00250011
+                      EXEC CICS XCTL                                    00260002
+                           PROGRAM('OZA037PL')                          00270002
+                      END-EXEC                                          00280002
+                 WHEN DFHPF7                                            00281011
+                      MOVE FIRSTREC TO WS-ACCNO                         00281115
+                      MOVE 5 TO C-COUNT                                 00281311
+                      SUBTRACT 1 FROM WS-ACCNO                          00281415
+                      PERFORM START-BROWSER                             00281511
+                      PERFORM READ-PREV UNTIL C-COUNT = 0 OR            00282011
+                                         RESP-CD NOT = DFHRESP(NORMAL)  00282111
+                      PERFORM SEND-BRMAP                                00282211
+                      PERFORM END-BROWSER                               00282311
+                 WHEN DFHPF8                                            00283011
+                      MOVE LASTREC TO WS-ACCNO                          00284115
+                      ADD 1 TO WS-ACCNO                                 00284215
+                      PERFORM START-BROWSER                             00284311
+                      PERFORM READ-NEXT UNTIL C-COUNT > 5 OR            00284411
+                                         RESP-CD NOT = DFHRESP(NORMAL)  00284511
+                      PERFORM SEND-BRMAP                                00284611
+                      PERFORM END-BROWSER                               00284711
+                 WHEN OTHER MOVE "INVALID KEY" TO MSGO                  00285010
+              END-EVALUATE                                              00286010
+           END-IF.                                                      00290011
+       START-BROWSER.                                                   00291005
+           MOVE LOW-VALUES TO BROWSEO                                   00291114
+           EXEC CICS STARTBR                                            00292005
+                FILE('F37V')                                            00293005
+                RIDFLD(WS-ACCNO)                                        00294006
+                GTEQ                                                    00295005
+                RESP(RESP-CD)                                           00295105
+           END-EXEC.                                                    00296005
+       END-BROWSER.                                                     00297011
+           EXEC CICS ENDBR                                              00298011
+                FILE('F37V')                                            00299011
+           END-EXEC                                                     00299111
+           EXEC CICS RETURN                                             00299211
+                TRANSID('T37N')                                         00299323
+                COMMAREA(WS-COMMAREA)                                   00299411
+                LENGTH(18)                                              00299511
+           END-EXEC.                                                    00299611
+       READ-NEXT.                                                       00300002
+           EXEC CICS READNEXT                                           00310002
+                DATASET('F37V')                                         00320003
+                INTO(WS-REC)                                            00330002
+                RIDFLD(WS-ACCNO)                                        00340006
+                RESP(RESP-CD)                                           00350002
+           END-EXEC                                                     00360002
+           IF RESP-CD = 0                                               00360111
+              MOVE SPACES TO WS-REC2, LINEO(C-COUNT)                    00360213
+              MOVE WS-ACCNO   TO WS-ACCNO1                              00361011
+              MOVE WS-CNAME   TO WS-CNAME1                              00362011
+              MOVE WS-GENDER  TO WS-GENDER1                             00363011
+              MOVE WS-ACCTYPE TO WS-ACCTYPE1                            00364011
+              MOVE WS-AMOUNT  TO WS-AMOUNT1                             00365011
+              MOVE WS-DATE    TO WS-DATE1                               00366011
+              MOVE WS-BLOC    TO WS-BLOC1                               00367011
+              MOVE WS-REC2    TO LINEO(C-COUNT)                         00370011
+              IF C-COUNT = 1                                            00371011
+                 MOVE WS-ACCNO1 TO FIRSTREC                             00372011
+              ELSE                                                      00373011
+                 MOVE WS-ACCNO1 TO LASTREC                              00374011
+              END-IF                                                    00375011
+              ADD 1 TO C-COUNT                                          00380011
+           ELSE                                                         00381011
+              SUBTRACT 1 FROM LASTREC                                   00381125
+              MOVE " END OF THE RECORDS" TO MSGO                        00382011
+           END-IF.                                                      00383011
+       READ-PREV.                                                       00384011
+           EXEC CICS READPREV                                           00385011
+                DATASET('F37V')                                         00386011
+                INTO(WS-REC)                                            00387011
+                RIDFLD(WS-ACCNO)                                        00388011
+                RESP(RESP-CD)                                           00389011
+           END-EXEC                                                     00389111
+           IF RESP-CD = 0                                               00389211
+              MOVE SPACES     TO WS-REC2, LINEO(C-COUNT)                00389313
+              MOVE WS-ACCNO   TO WS-ACCNO1                              00389411
+              MOVE WS-CNAME   TO WS-CNAME1                              00389511
+              MOVE WS-GENDER  TO WS-GENDER1                             00389611
+              MOVE WS-ACCTYPE TO WS-ACCTYPE1                            00389711
+              MOVE WS-AMOUNT  TO WS-AMOUNT1                             00389811
+              MOVE WS-DATE    TO WS-DATE1                               00389911
+              MOVE WS-BLOC    TO WS-BLOC1                               00390011
+              MOVE WS-REC2    TO LINEO(C-COUNT)                         00390111
+              IF C-COUNT = 5                                            00390215
+                 MOVE WS-ACCNO1 TO LASTREC                              00390315
+              ELSE                                                      00390415
+                 MOVE WS-ACCNO1 TO FIRSTREC                             00390515
+              END-IF                                                    00390615
+              SUBTRACT 1 FROM C-COUNT                                   00390711
+           ELSE                                                         00390811
+              MOVE " NO MORE THE RECORDS" TO MSGO                       00390915
+              MOVE ZEROES TO FIRSTREC, LASTREC                          00391020
+           END-IF.                                                      00391111
+       SEND-BRMAP.                                                      00392002
+           PERFORM DATETIME-PARA.                                       00392124
+           MOVE -1 TO LINEL(1)                                          00393016
+           EXEC CICS SEND                                               00400002
+                MAP('BROWSE')                                           00410002
+                MAPSET('MAP037D')                                       00420021
+                ERASE                                                   00430002
+                FREEKB                                                  00440002
+                RESP(RESP-CD)                                           00450002
+           END-EXEC.                                                    00460002
+       DATETIME-PARA.                                                   00470024
+           EXEC CICS ASKTIME  ABSTIME(DDATEO)                           00480024
+           END-EXEC.                                                    00490024
+           EXEC CICS FORMATTIME ABSTIME(DDATEO)                         00500024
+                DATESEP('/') DDMMYYYY(DDATEO)                           00510024
+                TIME(TTIMEO) TIMESEP(':')                               00520024
+           END-EXEC.                                                    00530024
